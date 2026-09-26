@@ -1676,7 +1676,7 @@ and **1 / 35 / 50 mA**.
         md(r"""## Power / voltage table at the 12 V / 50 mA bias
 
 Ambient $T_A=25\,^\circ\mathrm{C}$. Status: `OK`, `P>50%`, `V>80%`, `Tj>max`.
-CSV: `results/thermal_9V.csv`.
+CSV: `results/thermal_operate.csv`.
 """),
         code("""
 from p5v_design.thermal import power_table, copper_table, power_tables_vs_vin, power_tables_vs_load, bom_only
@@ -1689,7 +1689,7 @@ display(pt[[
     "V_applied_V", "V_derated_V", "V_util_derated_pct",
     "P_util_thermal_pct", "dT_C", "Tj_C", "status", "note",
 ]])
-pt.to_csv(ROOT/"results"/"thermal_9V.csv", index=False)
+pt.to_csv(ROOT/"results"/"thermal_operate.csv", index=False)
 display(copper_table())
 """),
         md(r"""## Stress bars at operate — power, voltage, ΔT (comparator 06)
