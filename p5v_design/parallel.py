@@ -117,7 +117,7 @@ def _fmt_bytes(n: int) -> int | str:
 
 def _short_name(name: str, width: int = 22) -> str:
     s = str(name)
-    for pfx in ("P5V_ISO_", "P5V_", "p5v_"):
+    for pfx in ("P5V_", "p5v_"):
         if s.startswith(pfx):
             s = s[len(pfx):]
             break

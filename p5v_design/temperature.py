@@ -176,9 +176,9 @@ def sweep_ltspice_from_logs(
     for T in temps:
         tag = temp_tag(T)
         d = temp_root / tag
-        op_log = d / "P5V_ISO_Regulator_op.log"
+        op_log = d / "P5V_Regulator_op.log"
         if not op_log.is_file():
-            op_log = d / "P5V_ISO_Regulator_tran.log"
+            op_log = d / "P5V_Regulator_tran.log"
         vnom = float("nan")
         if op_log.is_file():
             try:
@@ -187,7 +187,7 @@ def sweep_ltspice_from_logs(
             except Exception:
                 vnom = float("nan")
         nom_rows.append({"temp_c": float(T), "vout": vnom, "engine": "LTspice"})
-        wc_log = d / "P5V_ISO_Regulator_WC.log"
+        wc_log = d / "P5V_Regulator_WC.log"
         red = reduce_ltspice_wc_log(wc_log) if wc_log.is_file() else {
             "vout_lo": float("nan"), "vout_hi": float("nan"), "n_corners": 0,
         }

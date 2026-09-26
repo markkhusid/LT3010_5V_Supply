@@ -75,17 +75,17 @@ def write_all(p: CircuitParams | None = None, mc_n: int = 200) -> None:
     _copy_lib(NOM)
     _copy_lib(WC)
     _copy_lib(MC)
-    (NOM / "P5V_ISO_Regulator_op.cir").write_text(
+    (NOM / "P5V_Regulator_op.cir").write_text(
         _deck(p, "0") + ".tran 1u\n.meas TRAN vout_op FIND V(VOUT) AT 1u\n.end\n",
         encoding="utf-8",
     )
-    (NOM / "P5V_ISO_Regulator_tran.cir").write_text(
+    (NOM / "P5V_Regulator_tran.cir").write_text(
         _deck(p, "0") + ".tran 0 5m 0 1u startup\n.end\n",
         encoding="utf-8",
     )
     # 25 C page-3 box: 4.925 V to 5.075 V around the 5.000 V typical.
     half = 0.075
-    (WC / "P5V_ISO_Regulator_WC.cir").write_text(
+    (WC / "P5V_Regulator_WC.cir").write_text(
         _deck(p, "{s*0.075}")
         + ".param s=1\n"
         + ".tran 1u\n"
@@ -93,7 +93,7 @@ def write_all(p: CircuitParams | None = None, mc_n: int = 200) -> None:
         + ".meas TRAN vout_op FIND V(VOUT) AT 1u\n.end\n",
         encoding="utf-8",
     )
-    (MC / "P5V_ISO_Regulator_MC.cir").write_text(
+    (MC / "P5V_Regulator_MC.cir").write_text(
         _deck(p, "{(mc(1,1)-1)*0.075}")
         + f".tran 1u\n.step param run 1 {int(mc_n)} 1\n"
         + ".meas TRAN vout_op FIND V(VOUT) AT 1u\n.end\n",
@@ -107,11 +107,11 @@ def write_temp_decks(p: CircuitParams, temps: list[float]) -> None:
     for t in temps:
         dest = TEMP / temp_tag(t)
         _copy_lib(dest)
-        (dest / "P5V_ISO_Regulator_op.cir").write_text(
+        (dest / "P5V_Regulator_op.cir").write_text(
             _deck(p, "0") + f".temp {t:g}\n.tran 1u\n.meas TRAN vout_op FIND V(VOUT) AT 1u\n.end\n",
             encoding="utf-8",
         )
-        (dest / "P5V_ISO_Regulator_WC.cir").write_text(
+        (dest / "P5V_Regulator_WC.cir").write_text(
             _deck(p, "{s*0.075}")
             + f".param s=1\n.temp {t:g}\n.tran 1u\n"
             + ".step param s list -1 1\n"

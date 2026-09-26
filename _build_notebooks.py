@@ -947,7 +947,7 @@ This cell is read-only: it does not launch LTspice. Run notebook 05 (or
 `python LTSpice/run_ltspice_batch.py mc`) then re-run this cell.
 """),
         code("""
-lt_log = ROOT/"LTSpice"/"MC"/"P5V_ISO_Regulator_MC.log"
+lt_log = ROOT/"LTSpice"/"MC"/"P5V_Regulator_MC.log"
 if lt_log.is_file():
     lt_mc = meas_frame(lt_log, "vout_op", "vout")
     print("LTspice MC N", len(lt_mc), "min/max", lt_mc.vout.min(), lt_mc.vout.max())
@@ -1034,10 +1034,10 @@ try:
 except FileNotFoundError as e:
     print(e)
 
-op_cir = ROOT/"LTSpice"/"Nominal"/"P5V_ISO_Regulator_op.cir"
-tran_cir = ROOT/"LTSpice"/"Nominal"/"P5V_ISO_Regulator_tran.cir"
-wc_cir = ROOT/"LTSpice"/"WC"/"P5V_ISO_Regulator_WC.cir"
-mc_cir = ROOT/"LTSpice"/"MC"/"P5V_ISO_Regulator_MC.cir"
+op_cir = ROOT/"LTSpice"/"Nominal"/"P5V_Regulator_op.cir"
+tran_cir = ROOT/"LTSpice"/"Nominal"/"P5V_Regulator_tran.cir"
+wc_cir = ROOT/"LTSpice"/"WC"/"P5V_Regulator_WC.cir"
+mc_cir = ROOT/"LTSpice"/"MC"/"P5V_Regulator_MC.cir"
 if HAVE_LT and RUN_LTSPICE_BATCH:
     run_ltspice_decks([op_cir, wc_cir, mc_cir], max_workers=LTSPICE_WORKERS)
 else:
@@ -1063,8 +1063,8 @@ if HAVE_SPICE and not SKIP_SPICE_WC_MC:
     display(ng_wc[["corner", "vout_an", "vout_spice"]].head())
     display(ng_mc.summary)
 
-lt_wc = meas_frame(ROOT/"LTSpice"/"WC"/"P5V_ISO_Regulator_WC.log") if (ROOT/"LTSpice"/"WC"/"P5V_ISO_Regulator_WC.log").is_file() else pd.DataFrame()
-lt_mc = meas_frame(ROOT/"LTSpice"/"MC"/"P5V_ISO_Regulator_MC.log") if (ROOT/"LTSpice"/"MC"/"P5V_ISO_Regulator_MC.log").is_file() else pd.DataFrame()
+lt_wc = meas_frame(ROOT/"LTSpice"/"WC"/"P5V_Regulator_WC.log") if (ROOT/"LTSpice"/"WC"/"P5V_Regulator_WC.log").is_file() else pd.DataFrame()
+lt_mc = meas_frame(ROOT/"LTSpice"/"MC"/"P5V_Regulator_MC.log") if (ROOT/"LTSpice"/"MC"/"P5V_Regulator_MC.log").is_file() else pd.DataFrame()
 print("LTspice WC N", len(lt_wc), "MC N", len(lt_mc))
 
 def _band_frame(fr, col="vout"):
@@ -1267,7 +1267,7 @@ print("done three-engine comparison")
         md(r"""## OP bars and PSRR overlay (HV_monitor notebook 05 style)
 
 Grouped $V_{\mathrm{OUT}}$ at the operate point. PSRR overlay uses the
-datasheet G21 curve plus ngspice AC; LTspice PSRR if `P5V_ISO_Regulator_psrr`
+datasheet G21 curve plus ngspice AC; LTspice PSRR if `P5V_Regulator_psrr`
 has been run.
 """),
         code("""
@@ -1279,7 +1279,7 @@ if HAVE_SPICE:
         rows["ngspice"] = {"vout": float(op_ng.nodes.get("out", next(iter(op_ng.nodes.values()))))}
     except Exception as e:
         print("ngspice OP skip", e)
-lt_op = ROOT/"LTSpice"/"Nominal"/"P5V_ISO_Regulator_op.log"
+lt_op = ROOT/"LTSpice"/"Nominal"/"P5V_Regulator_op.log"
 if HAVE_LT and lt_op.is_file():
     try:
         m = parse_meas_log(lt_op)
@@ -1481,7 +1481,7 @@ if RUN_LTSPICE_BATCH:
         decks = []
         for T in T_LTSPICE:
             d = ROOT/"LTSpice"/"Temp"/temp_tag(T)
-            decks += [d/"P5V_ISO_Regulator_op.cir", d/"P5V_ISO_Regulator_WC.cir"]
+            decks += [d/"P5V_Regulator_op.cir", d/"P5V_Regulator_WC.cir"]
         run_ltspice_decks(decks, max_workers=LTSPICE_WORKERS)
     except FileNotFoundError as e:
         print(e)
