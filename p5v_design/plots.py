@@ -146,9 +146,22 @@ def annotate_minmax(
     apply_annotations(ax, items)
 
 
+def _expand_degenerate_limits(ax) -> None:
+    """A log axis with one finite value warns that the limits are identical."""
+    for getter, setter in ((ax.get_xlim, ax.set_xlim), (ax.get_ylim, ax.set_ylim)):
+        lo, hi = getter()
+        if not np.isfinite(lo) or not np.isfinite(hi) or lo == hi:
+            center = lo if np.isfinite(lo) else (hi if np.isfinite(hi) else 1.0)
+            if center == 0:
+                setter(-1.0, 1.0)
+            else:
+                setter(center / 10.0, center * 10.0)
+
+
 def savefig(fig: plt.Figure, path: Path | str | None) -> plt.Figure:
     for ax in fig.axes:
         apply_voltage_format(ax)
+        _expand_degenerate_limits(ax)
     try:
         fig.tight_layout()
     except Exception:

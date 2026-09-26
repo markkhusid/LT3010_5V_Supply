@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 import os
 import re
 import shutil
 import struct
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -64,11 +66,16 @@ def find_ltspice(explicit: str | Path | None = None) -> Path:
     raise FileNotFoundError("LTspice.exe not found. Set LTSPICE_EXE.")
 
 
+# One Wine process at a time. Several LTspice.exe copies share a wineserver
+# and stall, even when the notebook asks for several workers.
+_WINE_LOCK = threading.Lock()
+
+
 def run_ltspice_deck(
     cir_or_asc: Path | str,
     *,
     exe: Path | str | None = None,
-    timeout_s: float = 600.0,
+    timeout_s: float = 1800.0,
     quiet: bool = False,
 ) -> Path:
     deck = Path(cir_or_asc).resolve()
@@ -93,10 +100,12 @@ def run_ltspice_deck(
     t0 = time.perf_counter()
     env = os.environ.copy()
     env.setdefault("WINEDEBUG", "-all")
-    proc = subprocess.run(
-        cmd, cwd=str(deck.parent), capture_output=True, text=True,
-        timeout=timeout_s, env=env,
-    )
+    wine_lock = _WINE_LOCK if cmd[0] == "wine" else nullcontext()
+    with wine_lock:
+        proc = subprocess.run(
+            cmd, cwd=str(deck.parent), capture_output=True, text=True,
+            timeout=timeout_s, env=env,
+        )
     dt = time.perf_counter() - t0
     if not quiet:
         print(f"[LTspice] exit={proc.returncode}  elapsed={dt:.2f}s  {deck.name}", flush=True)
@@ -113,7 +122,7 @@ def run_ltspice_decks(
     decks: list[Path | str],
     *,
     exe: Path | str | None = None,
-    timeout_s: float = 600.0,
+    timeout_s: float = 1800.0,
     max_workers: int | None = None,
     verbose: bool = True,
 ) -> dict[str, Path]:
@@ -243,17 +252,35 @@ def parse_ltspice_raw_tran(
             cols[name] = others[:, i].astype(float)
 
     def _pick(*keys: str) -> np.ndarray | None:
-        for k, v in cols.items():
-            kl = k.lower()
-            if any(want in kl for want in keys):
-                return np.asarray(v, dtype=float)
+        items = [(k.lower(), np.asarray(v, dtype=float)) for k, v in cols.items()]
+        for want in keys:
+            for kl, v in items:
+                if kl == want or kl == f"v({want})":
+                    return v
+        for want in keys:
+            for kl, v in items:
+                if kl.startswith("v(") and want in kl:
+                    return v
         return None
 
-    vout = _pick(vout_name.lower(), "p5_iso", "vout", "out")
-    vin = _pick(vin_name.lower(), "p9v_iso", "vin")
+    vout = _pick(vout_name.lower(), "vout", "p5_iso")
+    vin = _pick(vin_name.lower(), "vin", "p9v_iso")
     if vout is None:
         vout = np.zeros_like(t)
-    return TranResult(t=np.asarray(t, dtype=float), vout=vout, vin=vin)
+    # LTspice writes a solver backstep as a point with an earlier time.
+    # Connecting those points draws the spiderweb on a startup plot.
+    # Keep only the forward-time trajectory.
+    t = np.asarray(t, dtype=float)
+    order = [0]
+    for i in range(1, t.size):
+        if np.isfinite(t[i]) and t[i] + 1e-15 >= t[order[-1]]:
+            order.append(i)
+    order = np.asarray(order, dtype=int)
+    t = t[order]
+    vout = np.asarray(vout, dtype=float)[order]
+    if vin is not None:
+        vin = np.asarray(vin, dtype=float)[order]
+    return TranResult(t=t, vout=vout, vin=vin)
 
 
 def meas_values(log_path: Path | str, name: str = "vout_op") -> np.ndarray:

@@ -145,8 +145,8 @@ N_SPICE_MC = 40
 N_LTSPICE_MC = 200
 SKIP_SPICE_WC_MC = False
 RUN_LTSPICE_BATCH = False
-SPICE_WORKERS = None
-LTSPICE_WORKERS = None
+SPICE_WORKERS = 4
+LTSPICE_WORKERS = 4
 
 p = CircuitParams(
     r1=R1, r2=R2, cff=CFF, cout=COUT, cin=CIN,
@@ -206,49 +206,49 @@ sch = schematic.draw_schematic(FIG / "01_schematic.png", p)
 print("saved", sch)
 """),
         md("## Divider current vs $I_{\\mathrm{ADJ}}$\n\n"
-           "Datasheet: keep the bottom resistor under 250 kΩ so $I_{\\mathrm{ADJ}}$ "
-           "is a small error. Our R2 = 2.2 kΩ is comfortably below that."),
+           "Datasheet guideline for an adjustable divider: keep the bottom "
+           "resistor under 250 kΩ so $I_{\\mathrm{ADJ}}$ is a small error. "
+           "The LT3010-5 example has no external divider, so the axis covers "
+           "1 kΩ to 300 kΩ and the 50 nA / 100 nA lines are the datasheet "
+           "ADJ currents, not a current in this circuit."),
         code("""
 stab = stability.stability_table(p)
 display(stab)
-ann_div = [
-    dict(text="operate Idiv", xy=(p.r2, 1e6 * p.i_div), offset=(18, 12), arrow=True),
-]
-# Idiv vs R2 family
-r2g = np.logspace(3, 5.4, 80)
-idiv = p.vadj / r2g
+r2g = np.logspace(3, 5.5, 160)  # 1 kΩ .. 316 kΩ
+idiv = 1.275 / r2g  # ADJ reference used by the datasheet divider equation
 fig, ax = plt.subplots(figsize=(8.0, 4.2))
-ax.loglog(r2g, 1e6 * idiv, "k-", lw=1.8, label=r"$I_{div}=V_{ADJ}/R_2$")
-ax.axhline(p.ldo.iadj_typ * 1e6, color="C3", ls="--", lw=1.1, label="Iadj typ 50 nA")
-ax.axhline(p.ldo.iadj_max * 1e6, color="C1", ls=":", lw=1.1, label="Iadj max 100 nA")
-ax.axvline(p.r2, color="0.45", ls="--")
+ax.loglog(r2g, 1e6 * idiv, "k-", lw=1.8, label=r"$I_{div}=1.275\\,\\mathrm{V}/R_2$")
+ax.axhline(50e-3, color="C3", ls="--", lw=1.1, label="Iadj typ 50 nA")
+ax.axhline(100e-3, color="C1", ls=":", lw=1.1, label="Iadj max 100 nA")
 ax.axvline(250e3, color="C4", ls="-.", lw=1.0, label="250 kΩ guideline")
+ax.set_xlim(r2g[0], r2g[-1])
 ax.set_xlabel(r"$R_2$ (Ω)")
 ax.set_ylabel(r"$I_{div}$ (µA)")
 ax.set_title("Feedback divider current vs bottom resistor")
 ax.legend(fontsize=8)
 ax.grid(True, which="both", alpha=0.3)
-plots.apply_annotations(ax, ann_div)
 plots.savefig(fig, FIG / "01_idiv_vs_r2.png")
 plt.show()
 """),
         md("## Cff 10 kHz rule and Cout/ESR window"),
         code("""
-f, z, rbot = stability.cff_impedance_sweep(p)
-ann_cff = [
-    dict(text="10 kHz rule", xy=(10e3, rbot), offset=(12, 14), arrow=True),
-    dict(text="|Xcff|", xy=(10e3, z[np.argmin(np.abs(f-10e3))]), offset=(12, -18), arrow=True),
-]
+# The LT3010-5 example has no feedforward capacitor. Plot the 1 µF
+# output capacitor that is on the figure, and mark 10 kHz.
+f = np.logspace(3, 5, 200)
+z = 1.0 / (2.0 * np.pi * f * p.cout)
+z10 = float(1.0 / (2.0 * np.pi * 10e3 * p.cout))
 fig, ax = plt.subplots(figsize=(8.0, 4.2))
-ax.loglog(f, z, "k-", lw=1.8, label=r"$|X_{Cff}|$")
-ax.axhline(rbot, color="C3", ls="--", label=f"R2 = {format_eng(rbot, 'Ω')}")
+ax.loglog(f, z, "k-", lw=1.8, label=rf"$|X_{{Cout}}|$, Cout = {format_eng(p.cout, 'F')}")
 ax.axvline(10e3, color="0.45", ls=":")
+ax.plot([10e3], [z10], "o", color="C0", ms=5)
+ax.annotate(f"10 kHz, {z10:.1f} Ω", xy=(10e3, z10), xytext=(18, 12),
+            textcoords="offset points", fontsize=8, arrowprops=dict(arrowstyle="->", lw=0.7))
+ax.set_xlim(f[0], f[-1])
 ax.set_xlabel("f (Hz)")
 ax.set_ylabel("Ω")
-ax.set_title("Cff impedance vs datasheet 10 kHz rule")
+ax.set_title("Output capacitor impedance (no Cff on the LT3010-5 example)")
 ax.legend(fontsize=8)
 ax.grid(True, which="both", alpha=0.3)
-plots.apply_annotations(ax, ann_cff)
 plots.savefig(fig, FIG / "01_cff_z.png")
 plt.show()
 print(f"Cout {format_eng(p.cout,'F')}  (min {format_eng(p.ldo.cout_min_f,'F')})   "
