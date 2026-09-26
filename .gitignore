@@ -61,3 +61,7 @@ datasheets/
 app_notes/
 models/lt3010/LT3010.lib
 models/lt3010/LT3010.asy
+LTSpice/**/*.lib
+LTSpice/**/*.log
+LTSpice/**/*.raw
+LTSpice/**/*.cir

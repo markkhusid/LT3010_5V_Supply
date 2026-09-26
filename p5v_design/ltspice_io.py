@@ -44,15 +44,23 @@ def find_ltspice(explicit: str | Path | None = None) -> Path:
     if env and Path(env).is_file():
         return Path(env)
     local = os.environ.get("LOCALAPPDATA", "")
+    home = Path.home()
+    wine = home / ".wine" / "drive_c"
     candidates = [
         Path(local) / "Programs" / "ADI" / "LTspice" / "LTspice.exe",
         Path(r"C:\Program Files\ADI\LTspice\LTspice.exe"),
         Path(r"C:\Program Files\LTC\LTspiceXVII\XVIIx64.exe"),
+        wine / "Program Files" / "ADI" / "LTspice" / "LTspice.exe",
+        wine / "Program Files" / "LTC" / "LTspiceXVII" / "XVIIx64.exe",
         Path(shutil.which("LTspice") or ""),
+        Path(shutil.which("ltspice") or ""),
     ]
     for c in candidates:
         if c and c.is_file():
             return c
+    for hit in wine.glob("users/*/AppData/Local/Programs/ADI/LTspice/LTspice.exe"):
+        if hit.is_file():
+            return hit
     raise FileNotFoundError("LTspice.exe not found. Set LTSPICE_EXE.")
 
 
@@ -73,12 +81,21 @@ def run_ltspice_deck(
             log.unlink()
         except OSError:
             pass
-    cmd = [str(lt), "-b", "-Run", str(deck)]
+    # Wine builds are Windows .exe files. Run them with the deck's
+    # directory as cwd and pass only the file name so the log has no
+    # absolute path from this machine.
+    if lt.suffix.lower() == ".exe" and os.name != "nt":
+        cmd = ["wine", str(lt), "-b", deck.name]
+    else:
+        cmd = [str(lt), "-b", deck.name]
     if not quiet:
         print(f"[LTspice] start  {deck.name}", flush=True)
     t0 = time.perf_counter()
+    env = os.environ.copy()
+    env.setdefault("WINEDEBUG", "-all")
     proc = subprocess.run(
-        cmd, cwd=str(deck.parent), capture_output=True, text=True, timeout=timeout_s,
+        cmd, cwd=str(deck.parent), capture_output=True, text=True,
+        timeout=timeout_s, env=env,
     )
     dt = time.perf_counter() - t0
     if not quiet:
