@@ -1,0 +1,22 @@
+* LT3010 behavioral (see netlist.behav_subckt)
+* Behavioral LT3010 (ngspice). Pins: OUT ADJ GND SHDN VIN
+.subckt LT3010_BEHAV OUT ADJ GND SHDN VIN
+.param GM=1e-3 RCOMP=1e7 CC=5n ROUT=0.05
+* Reference + line term (PSRR / line regulation)
+Rpsr VIN vin_lp 1k
+Cpsr vin_lp GND 160n
+Bref nref GND V = {VADJ} + {LINEK}*(V(vin_lp) - {VINNOM})
+* ADJ bias current into the pin
+Iadj ADJ GND {IADJ}
+* Error amp
+Gerr GND ncomp nref ADJ {GM}
+Rcomp ncomp GND {RCOMP}
+Ccomp ncomp GND {CC}
+* Pass element: voltage source + small Rout, dropout clamp
+Bout npre GND V = min(V(VIN) - {VDO}, max(0, V(ncomp)))
+Rout npre OUT {ROUT}
+* GND pin current (operate-point value)
+Ignd VIN GND {IGN0}
+* SHDN: unused (tied high in this application)
+Rshdn SHDN GND 100meg
+.ends LT3010_BEHAV

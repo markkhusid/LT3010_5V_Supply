@@ -1,0 +1,62 @@
+* LT3010-5 datasheet 5 V / 50 mA
+.param R1=0
+.param R2=1e+12
+.param CFF=0
+.param COUT=1e-06
+.param CIN=1e-06
+.param ESROUT=0.01
+.param ESRIN=0.01
+.param RLOAD=100
+.param VIN=12
+.param ILOAD=0.05
+.param VADJ=5
+.param IADJ=0
+.param VADJERR=0
+.param IADJEXTRA=0
+.param VINNOM=12
+.param LINEK=4.02684563758e-05
+.param PSRRTYP=68
+.param ILIM=0.14
+.param VDO=0.3
+.param IGN0=0.0018
+* Behavioral LT3010 (ngspice). Pins: OUT ADJ GND SHDN VIN
+.subckt LT3010_BEHAV OUT ADJ GND SHDN VIN
+.param GM=5e-3 RCOMP=2e7 CC=5n ROUT=0.05
+* Reference + line term (PSRR / line regulation)
+Rpsr VIN vin_lp 1k
+Cpsr vin_lp GND 160n
+Bref nref GND V = {VADJ} + {LINEK}*(V(vin_lp) - {VINNOM})
+* ADJ bias current into the pin
+Iadj ADJ GND {IADJ}
+* Error amp
+Gerr GND ncomp nref ADJ {GM}
+Rcomp ncomp GND {RCOMP}
+Ccomp ncomp GND {CC}
+* Pass element: voltage source + small Rout, dropout clamp
+Bout npre GND V = min(V(VIN) - {VDO}, max(0, V(ncomp)))
+Rout npre OUT {ROUT}
+* GND pin current (operate-point value)
+Ignd VIN GND {IGN0}
+* SHDN: unused (tied high in this application)
+Rshdn SHDN GND 100meg
+.ends LT3010_BEHAV
+
+Vin VIN 0 {VIN}
+Resrin VIN ncin {ESRIN}
+Cin ncin 0 {CIN}
+XU1 OUT ADJ 0 VIN VIN LT3010_BEHAV
+R1 OUT ADJ 1u
+R2 ADJ 0 {R2}
+* no Cff on the fixed 5 V example
+Resrout OUT ncout {ESROUT}
+Cout ncout 0 {COUT}
+Rload OUT 0 {RLOAD}
+
+.temp 25.0
+.dc Vin 3.0 12.0 0.05
+.control
+run
+wrdata dc_vin v(out) v(vin) v(adj)
+quit
+.endc
+.end

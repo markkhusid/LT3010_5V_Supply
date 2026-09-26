@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
+
+# Regenerable SPICE binary/artifacts (decks and nets stay tracked)
+*.raw
+*.op.raw
+*.log.raw
+LTSpice/*.log
+*.fft
+*.plt
+*.db
+*.mif
+*.mrk
+*.ind
+*.prb
+*.1OP
+
+# ngspice batch logs and per-sample MC workdirs (caches/figures stay tracked)
+**/ngspice.log
+results/ngspice_mc/
+results/ngspice_mc_smoke/
+results/ngspice_mc_temp/
+results/ngspice_nom/
+results/ngspice_temp/
+results/ngspice_wc/
+results/ngspice_wc_temp/
+results/**/*.log
+results/ngspice_wc_step/
+results/ngspice_wc_step_temp/
+results/figures/_tmp_*.png
+
+# Large binary dumps
+*.npz
+*.pkl
+
+# Sync-conflict copies
+*Edit conflict*
+*conflicted copy*
+
+# Datasheet PDF and the vendor LT3010 macromodel are not redistributed.
+datasheets/
+app_notes/
+models/lt3010/LT3010.lib
+models/lt3010/LT3010.asy

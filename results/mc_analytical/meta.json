@@ -1,0 +1,26 @@
+{
+  "n": 2000,
+  "columns": [
+    "sample",
+    "temp_c",
+    "R1",
+    "R2",
+    "Cff",
+    "Cout",
+    "Cin",
+    "ESRout",
+    "ESRin",
+    "vadj",
+    "iadj",
+    "vout",
+    "gain",
+    "headroom",
+    "vdo",
+    "ignd",
+    "iin",
+    "p_diss",
+    "efficiency",
+    "r1",
+    "r2"
+  ]
+}
